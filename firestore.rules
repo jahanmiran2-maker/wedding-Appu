@@ -1,0 +1,92 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // ===============================================================
+    // Assumed Data Model
+    // ===============================================================
+    //
+    // Collection: photos
+    // Fields:
+    //   - url: string (required)
+    //   - caption: string (optional)
+    //   - category: string (required, enum)
+    //   - createdAt: number (required)
+    //
+    // Collection: guestbook
+    // Fields:
+    //   - name: string (required, max 50)
+    //   - message: string (required, max 500)
+    //   - createdAt: number (required)
+    //
+    // Collection: rsvps
+    // Fields:
+    //   - name: string (required, max 100)
+    //   - email: string (required, email format)
+    //   - attendance: string (required, enum)
+    //   - dietary: string (optional, max 200)
+    //   - createdAt: number (required)
+    //
+    // ===============================================================
+
+    // Helper Functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return isAuthenticated() &&
+        (get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin' ||
+          (request.auth.token.email == "jahanmiran2@gmail.com" && request.auth.token.email_verified == true));
+    }
+
+    function isValidEmail(email) {
+      return email is string && email.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$");
+    }
+
+    function isValidPhoto(data) {
+      return data.keys().hasAll(['url', 'category', 'createdAt']) &&
+             data.url is string && data.url.size() > 0 &&
+             data.category in ['pre-wedding', 'wedding', 'reception', 'honeymoon'] &&
+             data.createdAt is number;
+    }
+
+    function isValidGuestbookEntry(data) {
+      return data.keys().hasAll(['name', 'message', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 50 &&
+             data.message is string && data.message.size() > 0 && data.message.size() <= 500 &&
+             data.createdAt is number;
+    }
+
+    function isValidRSVP(data) {
+      return data.keys().hasAll(['name', 'email', 'attendance', 'createdAt']) &&
+             data.name is string && data.name.size() > 0 && data.name.size() <= 100 &&
+             data.email is string && isValidEmail(data.email) &&
+             data.attendance in ['yes', 'no'] &&
+             (!('dietary' in data) || (data.dietary is string && data.dietary.size() <= 200)) &&
+             data.createdAt is number;
+    }
+
+    // Rules
+    match /photos/{photoId} {
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /guestbook/{entryId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && isValidGuestbookEntry(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /rsvps/{rsvpId} {
+      allow read: if isAdmin();
+      allow create: if isAuthenticated() && isValidRSVP(request.resource.data);
+      allow update, delete: if isAdmin();
+    }
+
+    match /users/{userId} {
+      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin());
+      allow write: if isAdmin();
+    }
+  }
+}

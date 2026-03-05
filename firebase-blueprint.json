@@ -1,0 +1,54 @@
+{
+  "entities": {
+    "Photo": {
+      "title": "Photo",
+      "description": "A wedding photo in the gallery",
+      "type": "object",
+      "properties": {
+        "url": { "type": "string", "description": "URL of the photo" },
+        "caption": { "type": "string", "description": "Caption for the photo" },
+        "category": { "type": "string", "enum": ["pre-wedding", "wedding", "reception", "honeymoon"], "description": "Category of the photo" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" }
+      },
+      "required": ["url", "category", "createdAt"]
+    },
+    "GuestbookEntry": {
+      "title": "Guestbook Entry",
+      "description": "A message left by a guest",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Name of the guest" },
+        "message": { "type": "string", "description": "Message content" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" }
+      },
+      "required": ["name", "message", "createdAt"]
+    },
+    "RSVP": {
+      "title": "RSVP",
+      "description": "A guest's RSVP response",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string", "description": "Full name of the guest" },
+        "email": { "type": "string", "description": "Email address" },
+        "attendance": { "type": "string", "enum": ["yes", "no"], "description": "Attendance status" },
+        "dietary": { "type": "string", "description": "Optional dietary requirements" },
+        "createdAt": { "type": "number", "description": "Timestamp of creation" }
+      },
+      "required": ["name", "email", "attendance", "createdAt"]
+    }
+  },
+  "firestore": {
+    "photos": {
+      "schema": "Photo",
+      "description": "Collection of wedding photos"
+    },
+    "guestbook": {
+      "schema": "GuestbookEntry",
+      "description": "Collection of guestbook messages"
+    },
+    "rsvps": {
+      "schema": "RSVP",
+      "description": "Collection of RSVP responses"
+    }
+  }
+}
